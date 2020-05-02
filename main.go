@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -16,11 +17,15 @@ func main() {
 	botApi := "https://api.telegram.org/bot"
 	botUrl := botApi + botToken
 	offset := 0
-
 	for {
 		updates, err := getUpdates(botUrl, offset)
 		if err != nil {
 			log.Println("Something went wrong: ", err.Error())
+		}
+
+		for _, update := range updates {
+			err = respond(botUrl, update)
+			offset = update.UpdateId + 1
 		}
 
 		fmt.Println(updates)
@@ -47,6 +52,17 @@ func getUpdates(botUrl string, offset int) ([]Update, error) {
 	return restResponse.Result, nil
 }
 
-func respond() {
-
+func respond(botUrl string, update Update) error {
+	var botMessage BotMessage
+	botMessage.ChatId = update.Message.Chat.ChatId
+	botMessage.Text = "Hi!"
+	buf, err := json.Marshal(botMessage)
+	if err != nil {
+		return err
+	}
+	_, err = http.Post(botUrl+"/sendMessage", "application/json", bytes.NewBuffer(buf))
+	if err != nil {
+		return err
+	}
+	return nil
 }
